@@ -1,11 +1,18 @@
 #!/bin/bash
+if [ -n "$1" ]; then
+    export FILENAME="$1"
+elif [ -z "$FILENAME" ]; then
+    export FILENAME="archivoSalida.txt"
+fi
 
-while true; do
+menuOpen=true;
+
+while $menuOpen; do
     clear
     echo "========================================="
     echo "             MENÚ DE CONTROL             "
     echo "========================================="
-    echo " 1) Crear entorno"
+    echo " 1) Crear entornos"
     echo " 2) Correr proceso"
     echo " 3) Mostrar alumnos"
     echo " 4) Mostrar 10 notas más altas"
@@ -82,7 +89,7 @@ while true; do
             fi
             echo "Saliendo del menú. Los procesos en background seguirán activos."
             read -p "Presione [Enter] para salir..."
-            exit 0
+            menuOpen=false
             ;;
         8)
             clear
@@ -120,3 +127,4 @@ while true; do
             ;;
     esac
 done
+exit 0
