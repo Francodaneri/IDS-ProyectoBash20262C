@@ -2,7 +2,7 @@
 if [ -n "$1" ]; then
     export FILENAME="$1"
 elif [ -z "$FILENAME" ]; then
-    export FILENAME="archivoSalida.txt"
+    export FILENAME="archivoSalida"
 fi
 
 menuOpen=true;
