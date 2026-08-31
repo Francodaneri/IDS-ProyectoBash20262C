@@ -213,7 +213,7 @@ function consolidar_status {
 }
 archivo_salida="$HOME/EPNro1/Salida/$FILENAME";
 menuOpen=true;
-sortChar=";;";
+sortChar=" ";
 #                                     MENU                                    #
 #/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/#
 while $menuOpen; do
