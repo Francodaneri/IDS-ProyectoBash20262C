@@ -62,23 +62,33 @@ function crear_consolidar_sh {
     ruta_script="$HOME/EPNro1/consolidar.sh"
     #Existe consolidar.sh?
     if [ -f "$ruta_script" ]; then
+        read -p "continue..."
         return 0
     else 
         echo "-------------------------------------------------------------"
-        echo " Detectando falta de consolidar.sh..."
+        #Fallo el directorio
+        if [ ! -d "$HOME/EPNro1" ]; then
+            directorio_funcional
+        fi
+
+        echo " Falta de consolidar.sh detectada"
         echo " Generando script de fondo..."
     
     #                              consolidar.sh                                  #
     #/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/#
     cat << 'EOF' > "$ruta_script"
 #!/bin/bash
-        
-# Creo el archivo de log
-LOG="$HOME/EPNro1/procesado.log"
-
+archivo_log="$HOME/EPNro1/procesado.log"
+archivo_salida="$HOME/EPNro1/Salida/$FILENAME"
         while true; do
-            # Buscar el archivo de salida dinámico creado por el menú
-            archivo_salida="$HOME/EPNro1/Salida/$FILENAME";
+
+            # definimos las variables las variables.                        
+
+            # si falta creamos procesado.log
+            if [[ ! -f "$HOME/EPNro1/procesado.log" ]]; then
+                touch "$HOME/EPNro1/procesado.log"
+                archivo_log=$(ls "$HOME/EPNro1"/procesado.log 2>/dev/null)
+            fi
 
             # Solo procesamos la entrada si el archivo de salida ya existe
             if [[ -f "$archivo_salida" ]]; then
@@ -99,7 +109,7 @@ LOG="$HOME/EPNro1/procesado.log"
                         grep -v '^$' "$archivo_salida" > "$archivo_salida.tmp"
                         mv "$archivo_salida.tmp" "$archivo_salida"
                         # Registro el procesamiento en el log
-                        echo "$(date '+%d/%m/%Y %H:%M:%S') - Fue procesado el archivo $(basename "$archivo_txt_entrada")" >> "$LOG"
+                        echo "$(date '+%d/%m/%Y %H:%M:%S') - Fue procesado el archivo $(basename "$archivo_txt_entrada")" >> "$archivo_log"
                 
                         mv "$archivo_txt_entrada" "$HOME/EPNro1/Procesando"
                     fi 
@@ -117,10 +127,28 @@ EOF
     fi
 }
 
+function consolidar_status {
+    # Busca el PID de consolidar.sh
+     PID=$(pgrep -f "consolidar.sh")
+    if [ -n "$PID" ]; then
+        echo "-------------------------------------------------------------"
+        echo "  STATUS PROCESO: [ EJECUTÁNDOSE ]"
+        echo "  PID(s) asignado(s): $PID"
+        echo "-------------------------------------------------------------"
+        return 0
+    else
+        echo "-------------------------------------------------------------"
+        echo "  STATUS PROCESO: [ DETENIDO / APAGADO ]"
+        echo "-------------------------------------------------------------"
+        return 1
+    fi
+}
+
 #PRE: -
 #POST: Chequeara todos los diretorios, si estan faltantes los crea.
 function directorio_funcional {
     # Si falta EPNro1 lo creara y todos los sub-directorios (Entrada, Procesando, Salida)
+    echo "-------------------------------------------------------------"
     if [ ! -d "$HOME/EPNro1" ]; then
         echo "Todos los directorios estan faltantes:"
         echo " Directorio principal:"
@@ -170,7 +198,11 @@ function directorio_funcional {
 #PRE: -
 #POST: Chequea el archivo de salida, (EXISTE o ESTA VACIO?) y arregla los posibles casos.
 function salida_funcional {
-    archivo_salida=$(ls "$HOME/EPNro1/Salida/$FILENAME" 2>/dev/null)
+    #Fallo el directorio
+    if [ ! -d "$HOME/EPNro1/Salida" ]; then
+        directorio_funcional
+    fi
+
     # Si no existe el archivo de salida lo creara.
     if [[ ! -f "$archivo_salida" ]]; then
         if [ -n "$FILENAME" ]; then
@@ -178,7 +210,7 @@ function salida_funcional {
             sleep 2
         else
             echo "No existe ningun archivo en la salida"
-            read -r -p "¿Como quiere llamar al archivo de salida (con el .txt)? " FILENAME
+            read -r -p "¿Como quiere llamar al archivo de salida (con extension .txt)? " FILENAME
             echo "Creando archivo en la salida... $FILENAME"
             sleep 2
         fi
@@ -250,22 +282,11 @@ function salida_funcional {
     return $status
 }
 
-function consolidar_status {
-    # Busca el PID de consolidar.sh
-     PID=$(pgrep -f "consolidar.sh")
-    if [ -n "$PID" ]; then
-        echo "-------------------------------------------------------------"
-        echo "  STATUS PROCESO: [ EJECUTÁNDOSE ]"
-        echo "  PID(s) asignado(s): $PID"
-        echo "-------------------------------------------------------------"
-        return 0
-    else
-        echo "-------------------------------------------------------------"
-        echo "  STATUS PROCESO: [ DETENIDO / APAGADO ]"
-        echo "-------------------------------------------------------------"
-        return 1
-    fi
+function archivo_salida_filtrado {
+    #CODGIO A IMPLEMENTAR
+    echo "si lo borran crashea, borrar luego de implementar"
 }
+
 archivo_salida="$HOME/EPNro1/Salida/$FILENAME";
 menuOpen=true;
 sortChar=" ";
@@ -288,7 +309,7 @@ while $menuOpen; do
         echo " 7) Salir del menú (agrege -d para borrar entorno)"
         echo " 8) Detener proceso de escucha"
         echo " 9) Verificar TODO el estado del sistema"
-        echo "==================================================="
+        echo "============================================================="
         read -r -p "Seleccione una opción [0-9]: " entrada
         #/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-#
 
@@ -340,6 +361,7 @@ while $menuOpen; do
                         echo " Iniciando proceso en segundo plano..."
                         nohup "$HOME/EPNro1/consolidar.sh" > /dev/null 2>&1 &
                         echo " Proceso iniciado con éxito."
+                        echo "-------------------------------------------------------------"
                     fi
             read -p "Presione [Enter] para continuar..."
             ;;
@@ -384,7 +406,7 @@ while $menuOpen; do
         6)
             clear 
                 echo "============================================================="
-                echo "			  LOG DE PROCESAMIENTO"
+                echo "                   LOG DE PROCESAMIENTO                      "
                 echo "============================================================="
                 if [[ -f "$HOME/EPNro1/procesado.log" ]]; then
                 	cat "$HOME/EPNro1/procesado.log"
@@ -404,8 +426,10 @@ while $menuOpen; do
                     pkill -f "consolidar.sh"
                     rm -rf "$HOME/EPNro1"
                     echo "Entorno borrado con éxito."
+                    echo "Saliendo del menú."
+                else
+                    echo "Saliendo del menú. Los procesos en background seguirán activos."
                 fi
-                echo "Saliendo del menú. Los procesos en background seguirán activos."
                 read -p "Presione [Enter] para salir..."
                 menuOpen=false
             ;;
@@ -415,10 +439,12 @@ while $menuOpen; do
                 echo "Verificando el estado actual del proceso..."
                 if consolidar_status; then
                     echo " Deteniendo el proceso de escucha..."
-                    pkill -x "consolidar.sh"
+                    pkill -f "consolidar.sh"
                     echo " Proceso detenido con éxito."
+                    echo "-------------------------------------------------------------"
                 else
                     echo " No se requiere acción. No hay ningún proceso en ejecución."
+                    echo "-------------------------------------------------------------"
                 fi
                 read -p "Presione [Enter] para continuar..."
             ;;
@@ -436,6 +462,7 @@ while $menuOpen; do
                     if salida_funcional; then
                         echo "  Salida funcional"
                     else
+                    echo "-------------------------------------------------------------"
                         echo "  ATENCIÓN!!!!!!: el archivo de salida esta vacio."
                     fi
                 echo "-------------------------------------------------------------"
