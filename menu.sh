@@ -1,10 +1,60 @@
 #!/bin/bash
-if [ -n "$1" ]; then
-    export FILENAME="$1"
-elif [ -z "$FILENAME" ]; then
-    export FILENAME="archivoSalida.txt"
+if [ -n "$FILENAME" ]; then
+    echo " Variable de ambiente detectada: FILENAME=\"$FILENAME\""
+    sleep 2
+else
+    if [ -n "$1" ]; then
+        export FILENAME="$1"
+        echo " Archivo de salida = \"$FILENAME\""
+        sleep 2
+    else
+        export FILENAME="salida.txt"
+        echo " Archivo de salida = \"$FILENAME\""
+        echo " Puede cambiar el nombre del archivo de salida en el menu"
+        sleep 2 
+    fi
 fi
 
+clear
+echo "----------------------------"
+echo "---------INGRESANDO---------"
+echo "----------------------------"
+sleep 0.1
+clear
+echo "##--------------------------"
+echo "##-------INGRESANDO---------"
+echo "##--------------------------"
+sleep 0.1
+clear
+echo "####------------------------"
+echo "####-----INGRESANDO---------"
+echo "####------------------------"
+sleep 0.1
+clear
+echo "######----------------------"
+echo "######---INGRESANDO---------"
+echo "######----------------------"
+sleep 0.1
+clear
+echo "##########------------------"
+echo "##########NGRESANDO---------"
+echo "##########------------------"
+sleep 0.1
+clear
+echo "###############-------------"
+echo "###############ANDO---------"
+echo "###############-------------"
+sleep 0.1
+clear
+echo "#######################-----"
+echo "#######################-----"
+echo "#######################-----"
+sleep 0.1
+clear
+echo "############################"
+echo "         BIENVENIDO         "
+echo "############################"
+sleep 1
 
 #PRE: -
 #POST: SI NO EXISTE -> consolidar.sh creara uno nuevo.
@@ -28,7 +78,7 @@ LOG="$HOME/EPNro1/procesado.log"
 
         while true; do
             # Buscar el archivo de salida dinámico creado por el menú
-            archivo_salida=$(ls "$HOME/EPNro1/Salida/$FILENAME" 2>/dev/null)
+            archivo_salida="$HOME/EPNro1/Salida/$FILENAME";
 
             # Solo procesamos la entrada si el archivo de salida ya existe
             if [[ -f "$archivo_salida" ]]; then
@@ -54,6 +104,8 @@ LOG="$HOME/EPNro1/procesado.log"
                         mv "$archivo_txt_entrada" "$HOME/EPNro1/Procesando"
                     fi 
                 done
+            else
+                touch "$archivo_salida"
             fi
             sleep 3
         done
@@ -82,7 +134,6 @@ function directorio_funcional {
         mkdir "$HOME/EPNro1/Entrada"
         mkdir "$HOME/EPNro1/Procesando"
         mkdir "$HOME/EPNro1/Salida"
-        touch "$HOME/EPNro1/Salida/$FILENAME"
         echo " Directorio creado correctamente."
         echo "-------------------------------------------------------------"
     fi
@@ -112,7 +163,6 @@ function directorio_funcional {
         mkdir "$HOME/EPNro1/Salida"
         echo " Directorio creado correctamente."
         echo "-------------------------------------------------------------"
-        touch "$HOME/EPNro1/Salida/$FILENAME"
     fi
         return 0
 }
@@ -123,13 +173,18 @@ function salida_funcional {
     archivo_salida=$(ls "$HOME/EPNro1/Salida/$FILENAME" 2>/dev/null)
     # Si no existe el archivo de salida lo creara.
     if [[ ! -f "$archivo_salida" ]]; then
-        echo "No existe ningun archivo en la salida"
-        read -r -p "¿Como quiere llamar al archivo de salida (sin el .txt)? " FILENAME
-        echo "Creando archivo en la salida..."
+        if [ -n "$FILENAME" ]; then
+            echo " Variable de ambiente detectada: FILENAME=\"$FILENAME\""
+            sleep 2
+        else
+            echo "No existe ningun archivo en la salida"
+            read -r -p "¿Como quiere llamar al archivo de salida (con el .txt)? " FILENAME
+            echo "Creando archivo en la salida... $FILENAME"
+            sleep 2
+        fi
         touch "$HOME/EPNro1/Salida/$FILENAME"
         archivo_salida=$(ls "$HOME/EPNro1/Salida/$FILENAME" 2>/dev/null)
         echo "-------------------------------------------------------------"
-        return 1 
     fi
     #Da tiempo al consolidar.sh para procesar, esto evita casos falsos de archivo vacio.
         echo "Espere porfavor..."
@@ -197,7 +252,7 @@ function salida_funcional {
 
 function consolidar_status {
     # Busca el PID de consolidar.sh
-    PID=$(pgrep -f "consolidar.sh")
+     PID=$(pgrep -f "consolidar.sh")
     if [ -n "$PID" ]; then
         echo "-------------------------------------------------------------"
         echo "  STATUS PROCESO: [ EJECUTÁNDOSE ]"
@@ -223,6 +278,7 @@ while $menuOpen; do
         echo "============================================================="
         echo "                       MENÚ DE CONTROL                       "
         echo "============================================================="
+        echo " 0) Modificar FILENAME"
         echo " 1) Crear/Chequear entornos"
         echo " 2) Correr/Chequear el proceso consolidar.sh"
         echo " 3) Mostrar alumnos"
@@ -233,7 +289,7 @@ while $menuOpen; do
         echo " 8) Detener proceso de escucha"
         echo " 9) Verificar TODO el estado del sistema"
         echo "==================================================="
-        read -r -p "Seleccione una opción [1-9]: " entrada
+        read -r -p "Seleccione una opción [0-9]: " entrada
         #/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-#
 
     # Separar la opción y el parámetro (si existe)
@@ -242,6 +298,29 @@ while $menuOpen; do
 
     #Procesamiento de la entrada
     case $opcion in
+        # CASO: 0) Modificar FILENAME
+        0)
+            clear
+            read -r -p "Ingrese el nuevo nombre del archivo de salida (con el .txt): " FILENAME
+            archivo_salida="$HOME/EPNro1/Salida/$FILENAME"
+            echo "Archivo de salida modificado a: $FILENAME"
+            if consolidar_status; then
+                echo " Reiniciando el proceso de escucha..."
+                pkill -f "consolidar.sh"
+                while consolidar_status > /dev/null 2>&1; do
+                    echo " Esperando a que el proceso se detenga..."
+                    sleep 1
+                done
+                nohup "$HOME/EPNro1/consolidar.sh" > /dev/null 2>&1 &
+                while ! consolidar_status > /dev/null 2>&1; do
+                    echo " Esperando a que el proceso se inicie..."
+                    sleep 1
+                done
+                echo " Proceso reiniciado con éxito."
+                sleep 1
+            fi
+            read -p "Presione [Enter] para continuar..."
+            ;;    
         # CASO: 1) Crea/Chequea entornos
         1)
             clear
@@ -334,10 +413,9 @@ while $menuOpen; do
         8)
             clear
                 echo "Verificando el estado actual del proceso..."
-                crear_consolidar_sh
                 if consolidar_status; then
                     echo " Deteniendo el proceso de escucha..."
-                    pkill -f "consolidar.sh"
+                    pkill -x "consolidar.sh"
                     echo " Proceso detenido con éxito."
                 else
                     echo " No se requiere acción. No hay ningún proceso en ejecución."
@@ -363,11 +441,7 @@ while $menuOpen; do
                 echo "-------------------------------------------------------------"
                 echo " Verificando proceso en segundo plano..."
                     crear_consolidar_sh
-                    if ! consolidar_status; then
-                        echo " Arrancando consolidar.sh automáticamente..."
-                        nohup "$HOME/EPNro1/consolidar.sh" > /dev/null 2>&1 &
-                        echo "  Proceso funcional"
-                    fi
+                    consolidar_status
                 echo "-------------------------------------------------------------"
                 echo " Todo funciona correctamente"
                 read -p "  Presione [Enter] para continuar..."
